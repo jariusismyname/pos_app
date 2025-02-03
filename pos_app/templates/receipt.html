@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow p-4">
+        <h2 class="text-center">🧾 Order Receipt</h2>
+        <hr>
+
+        <p><strong>Order Date:</strong> {{ order_date }}</p>
+        <p><strong>Shipping Address:</strong> {{ shipping_address }}</p>
+
+        <h4 class="mt-4">Order Summary:</h4>
+        <table class="table table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Total Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order_items %}
+                <tr>
+                    <td>{{ item.product.name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>${{ item.total_price }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3 class="text-end">Total: <span class="text-success">${{ total_price }}</span></h3>
+
+        <div class="text-center mt-4">
+            <a href="{% url 'products' %}" class="btn btn-primary">Continue Shopping</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

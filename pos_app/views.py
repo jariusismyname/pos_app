@@ -136,31 +136,27 @@ def add_to_cart(request, product_id):
     messages.success(request, f"{product.name} added to your cart.")
     return redirect('products')  # Redirect back to the products page
 
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import CartItem
-from django.contrib import messages
 
-def adjust_cart_item(request, cart_item_id):
+# Adjust Cart Item Quantity
+def adjust_cart_item(request, cart_item_id, quantity):
     cart_item = get_object_or_404(CartItem, id=cart_item_id)
 
-    if request.method == "POST":
-        try:
-            quantity = int(request.POST.get("quantity"))
+    if quantity > 0:
+        cart_item.quantity = quantity
+        cart_item.save()
+    else:
+        cart_item.delete()  # Delete the cart item if quantity is 0
 
-            if quantity > 0:
-                cart_item.quantity = quantity
-                cart_item.save()
-                messages.success(request, f"Updated {cart_item.product.name} quantity to {quantity}.")
-            else:
-                cart_item.delete()  # ✅ Remove item if quantity is 0
-                messages.warning(request, f"Removed {cart_item.product.name} from cart.")
-        except ValueError:
-            messages.error(request, "Invalid quantity input.")
+    return redirect('view_cart')
 
-    return redirect("view_cart")
 
 # Place Order (after checking cart)
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Cart, Order, CartItem
+from django.contrib import messages
+from django.utils.timezone import now
 @login_required
+
 def place_order(request):
     cart = get_object_or_404(Cart, user=request.user)
 
@@ -171,25 +167,39 @@ def place_order(request):
             messages.error(request, "Shipping address is required.")
             return redirect('view_cart')  # If no shipping address provided
 
-        # Create an order from cart items
+        # Create a list to store order details
+        order_items = []
+        total_price = 0
+
         for item in cart.items.all():
-            Order.objects.create(
+            order = Order.objects.create(
                 product=item.product,
                 quantity=item.quantity,
                 total_price=item.total_price(),
                 shipping_address=shipping_address,
                 ordered_by_username=request.user.username,
+                ordered_at=now()
             )
-            item.product.quantity -= item.quantity  # Update product quantity
+            order_items.append(order)
+            total_price += order.total_price
+
+            # Update product quantity in stock
+            item.product.quantity -= item.quantity
             item.product.save()
 
-        # Clear the user's cart
+        # Clear cart after placing order
         cart.items.all().delete()
 
-        messages.success(request, "Your order has been placed successfully!")
-        return redirect('products')  # Redirect to the products page after successful order
+        # Redirect to the receipt page with order details
+        return render(request, 'receipt.html', {
+            'order_items': order_items,
+            'total_price': total_price,
+            'shipping_address': shipping_address,
+            'order_date': now()
+        })
 
     return render(request, 'place_order.html', {'cart': cart})
+
 
 
 # Logout View
