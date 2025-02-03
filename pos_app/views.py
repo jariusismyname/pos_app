@@ -7,6 +7,35 @@ from .forms import LoginForm, SignUpForm, ProductForm
 from .models import Product, CustomUser, Order
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Product
+from .forms import ProductForm
+from django.contrib import messages
+from django.shortcuts import redirect, get_object_or_404
+from .models import Product
+from django.contrib import messages
+
+# Delete product view
+def delete_product(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    product.delete()
+    messages.success(request, "Product deleted successfully!")
+    return redirect('crud')  # Redirect to the CRUD page after deletion
+
+# Edit product view
+def edit_product(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES, instance=product)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Product updated successfully!")
+            return redirect('crud')  # Redirect to the CRUD page after successful update
+    else:
+        form = ProductForm(instance=product)
+    
+    return render(request, 'edit_product.html', {'form': form, 'product': product})
 
 def custom_admin_login(request):
     if request.method == 'POST':
