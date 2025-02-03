@@ -24,6 +24,7 @@
                     <form action="{% url 'adjust_cart_item' item.id %}" method="POST" class="d-flex">
                         {% csrf_token %}
                         <input type="number" name="quantity" value="{{ item.quantity }}" min="0" class="form-control form-control-sm" style="width: 60px;">
+                        
                         <button type="submit" class="btn btn-info btn-sm ms-2">Update</button>
                     </form>
                     
@@ -32,15 +33,20 @@
                 <td>${{ item.total_price }}</td>
                 <td>
                     
-                    <!-- Dedicated Remove Button -->
-                    <form action="{% url 'adjust_cart_item' item.id %}" method="POST">
-                        {% csrf_token %}
-                        <input type="hidden" name="quantity" value="0">
-                        <button type="submit" class="btn btn-danger btn-sm mt-1">Remove</button>
-                    </form>
-                    <!-- <a href="{% url 'adjust_cart_item' item.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Remove item?');">
-                        <i class="fas fa-trash"></i> Remove
-                    </a> -->
+                    <form action="{% url 'adjust_cart_item' item.id %}" method="POST" class="d-flex">
+    {% csrf_token %}
+    <!-- <input type="number" name="quantity" value="{{ item.quantity }}" min="0" class="form-control form-control-sm" style="width: 60px;"> -->
+    <!-- <button type="submit" class="btn btn-info btn-sm ms-2">Update</button> -->
+</form>
+
+<!-- Dedicated Remove Button -->
+<form action="{% url 'adjust_cart_item' item.id %}" method="POST">
+    {% csrf_token %}
+    <input type="hidden" name="quantity" value="0">
+    <button type="submit" class="btn btn-danger btn-sm mt-1">Remove</button>
+</form>
+
+                  
                 </td>
             </tr>
             {% endfor %}

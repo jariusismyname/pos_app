@@ -138,17 +138,30 @@ def add_to_cart(request, product_id):
 
 
 # Adjust Cart Item Quantity
-def adjust_cart_item(request, cart_item_id, quantity):
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import CartItem
+from django.contrib import messages
+
+def adjust_cart_item(request, cart_item_id):
+    # Get the cart item by ID
     cart_item = get_object_or_404(CartItem, id=cart_item_id)
 
-    if quantity > 0:
-        cart_item.quantity = quantity
-        cart_item.save()
-    else:
-        cart_item.delete()  # Delete the cart item if quantity is 0
+    if request.method == "POST":
+        # Get quantity from POST data
+        try:
+            quantity = int(request.POST.get("quantity"))
 
-    return redirect('view_cart')
+            if quantity > 0:
+                cart_item.quantity = quantity
+                cart_item.save()
+                messages.success(request, f"Updated {cart_item.product.name} quantity to {quantity}.")
+            else:
+                cart_item.delete()  # Remove item if quantity is 0
+                messages.warning(request, f"Removed {cart_item.product.name} from cart.")
+        except ValueError:
+            messages.error(request, "Invalid quantity input.")
 
+    return redirect("view_cart")
 
 # Place Order (after checking cart)
 from django.shortcuts import render, redirect, get_object_or_404
