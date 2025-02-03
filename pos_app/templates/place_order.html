@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h2>Place Order for {{ product.name }}</h2>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label>Quantity</label>
+                <input type="number" name="quantity" class="form-control" max="{{ product.quantity }}" required>
+            </div>
+            <div class="mb-3">
+                <label>Shipping Address</label>
+                <textarea name="shipping_address" class="form-control" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-success">Place Order</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
