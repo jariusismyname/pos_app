@@ -1,19 +1,10 @@
-from django.shortcuts import render
-
-# Create your views here.
-from django.shortcuts import render, redirect
-from django.contrib.auth import login, logout
-from .forms import LoginForm, SignUpForm, ProductForm
-from .models import Product, CustomUser, Order
-from django.shortcuts import render, redirect
-from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Product
-from .forms import ProductForm
+from django.contrib.auth import login, logout
 from django.contrib import messages
-from django.shortcuts import redirect, get_object_or_404
-from .models import Product
-from django.contrib import messages
+from .forms import LoginForm, SignUpForm, ProductForm
+from .models import Product, CustomUser, Cart, CartItem, Order
+from django.contrib.auth.decorators import login_required
+
 
 # Delete product view
 def delete_product(request, product_id):
@@ -22,10 +13,11 @@ def delete_product(request, product_id):
     messages.success(request, "Product deleted successfully!")
     return redirect('crud')  # Redirect to the CRUD page after deletion
 
+
 # Edit product view
 def edit_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
-    
+
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES, instance=product)
         if form.is_valid():
@@ -34,46 +26,42 @@ def edit_product(request, product_id):
             return redirect('crud')  # Redirect to the CRUD page after successful update
     else:
         form = ProductForm(instance=product)
-    
+
     return render(request, 'edit_product.html', {'form': form, 'product': product})
 
+
+# Custom Admin Login
 def custom_admin_login(request):
     if request.method == 'POST':
-        # Check if the password is correct
         password = request.POST.get('password')
         if password == "password":
-            # Redirect to the crud page for admin
-            return redirect('crud')  
+            return redirect('crud')  # Redirect to CRUD page
         else:
-            # Show an error message if password is incorrect
             messages.error(request, "Incorrect password!")
-            return render(request, 'admin_login.html')  # Re-render the login page
-    return render(request, 'admin_login.html')  # Show login page on GET request
+            return render(request, 'admin_login.html')
+    return render(request, 'admin_login.html')
 
+
+# Welcome Page
 def welcome(request):
     return render(request, 'welcome.html')
+
+
+# Login View
 def login_view(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
-        
+
         if form.is_valid():
             try:
-                # Get the user based on username
                 user = CustomUser.objects.get(username=form.cleaned_data['username'])
             except CustomUser.DoesNotExist:
                 messages.error(request, "User does not exist")
                 return render(request, 'login.html', {'form': form})
 
-            # Check if password matches
             if user.check_password(form.cleaned_data['password']):
                 login(request, user)
-
-                # # If user is admin (staff), redirect to the CRUD page
-                # if user.is_staff:
-                #     return redirect('crud')
-                
-                # If user is a regular customer, redirect to the products page
-                return redirect('products')
+                return redirect('products')  # Redirect to the products page for regular users
             else:
                 messages.error(request, "Incorrect password")
                 return render(request, 'login.html', {'form': form})
@@ -84,6 +72,7 @@ def login_view(request):
     return render(request, 'login.html', {'form': form})
 
 
+# Sign Up View
 def signup_view(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST)
@@ -98,66 +87,114 @@ def signup_view(request):
         form = SignUpForm()
     return render(request, 'signup.html', {'form': form})
 
-def crud_view(request):
+
+# Products View (with cart data)
+def products_view(request):
+    products = Product.objects.filter(quantity__gt=0)
+
+    # Get or create the cart for the logged-in user
+    cart, created = Cart.objects.get_or_create(user=request.user)
+
+    # Render the products page with the cart information
+    return render(request, 'products.html', {'products': products, 'cart': cart})
+
+
+from django.shortcuts import render, get_object_or_404
+from .models import Cart
+
+def view_cart(request):
+    # Get the user's cart
+    cart = get_object_or_404(Cart, user=request.user)
     
+    # Get all the items in the cart
+    cart_items = cart.items.all()
+
+    # Render the cart page with the cart items
+    return render(request, 'cart.html', {'cart': cart, 'cart_items': cart_items})
+from django.shortcuts import get_object_or_404, redirect
+from .models import Cart, CartItem, Product
+from django.contrib import messages
+
+# Add product to cart
+def add_to_cart(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    # Get or create the cart for the logged-in user
+    cart, created = Cart.objects.get_or_create(user=request.user)
+
+    # Check if the product is already in the cart
+    cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
+
+    if not created:
+        cart_item.quantity += 1  # Increase the quantity if product already in cart
+    cart_item.save()
+
+    messages.success(request, f"{product.name} added to your cart.")
+    return redirect('products')  # Redirect back to the products page
+
+
+# Adjust Cart Item Quantity
+def adjust_cart_item(request, cart_item_id, quantity):
+    cart_item = get_object_or_404(CartItem, id=cart_item_id)
+
+    if quantity > 0:
+        cart_item.quantity = quantity
+        cart_item.save()
+    else:
+        cart_item.delete()  # Delete the cart item if quantity is 0
+
+    return redirect('view_cart')
+
+
+# Place Order (after checking cart)
+@login_required
+def place_order(request):
+    cart = get_object_or_404(Cart, user=request.user)
+
+    if request.method == 'POST':
+        shipping_address = request.POST.get('shipping_address')
+
+        if not shipping_address:
+            messages.error(request, "Shipping address is required.")
+            return redirect('view_cart')  # If no shipping address provided
+
+        # Create an order from cart items
+        for item in cart.items.all():
+            Order.objects.create(
+                product=item.product,
+                quantity=item.quantity,
+                total_price=item.total_price(),
+                shipping_address=shipping_address,
+                ordered_by_username=request.user.username,
+            )
+            item.product.quantity -= item.quantity  # Update product quantity
+            item.product.save()
+
+        # Clear the user's cart
+        cart.items.all().delete()
+
+        messages.success(request, "Your order has been placed successfully!")
+        return redirect('products')  # Redirect to the products page after successful order
+
+    return render(request, 'place_order.html', {'cart': cart})
+
+
+# Logout View
+def logout_view(request):
+    logout(request)
+    return redirect('login')
+# In views.py
+from django.shortcuts import render
+from .models import Product
+from .forms import ProductForm
+
+def crud_view(request):
     products = Product.objects.all()
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
-            return redirect('crud')
+            return redirect('crud')  # Redirect to CRUD page after successful update
     else:
         form = ProductForm()
     return render(request, 'crud.html', {'form': form, 'products': products})
-
-def products_view(request):
-    products = Product.objects.filter(quantity__gt=0)
-    return render(request, 'products.html', {'products': products})
-
-def logout_view(request):
-    logout(request)
-    return redirect('login')
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-from .models import Product, Order
-
-@login_required
-def place_order(request, product_id):
-    try:
-        product = Product.objects.get(id=product_id)
-    except Product.DoesNotExist:
-        return redirect('products')  # Handle the case where the product does not exist
-
-    if request.method == 'POST':
-        quantity = int(request.POST.get('quantity'))
-        shipping_address = request.POST.get('shipping_address')
-
-        if quantity > product.quantity:
-            return render(request, 'place_order.html', {
-                'product': product,
-                'error': 'Not enough stock available'
-            })
-
-        # If the user is authenticated, use their username; otherwise, set as "guest"
-        if request.user.is_authenticated:
-            ordered_by = request.user.username
-        else:
-            ordered_by = "guest"  # Set a default for guests
-
-        # Update product quantity
-        product.quantity -= quantity
-        product.save()
-
-        # Create the order
-        Order.objects.create(
-            product=product,
-            quantity=quantity,
-            total_price=quantity * product.price,
-            shipping_address=shipping_address,
-            ordered_by_username=ordered_by,  # Ensure you're using this field correctly
-        )
-
-        # Redirect to the products page after the order is placed
-        return redirect('products')
-
-    return render(request, 'place_order.html', {'product': product})

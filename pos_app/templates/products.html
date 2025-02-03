@@ -1,21 +1,34 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2 class="mb-4">Available Products</h2>
-<div class="row">
-    {% for product in products %}
-    <div class="col-md-4">
-        <div class="card product-card">
-            <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
-            <div class="card-body">
-                <h5 class="card-title">{{ product.name }}</h5>
-                <p class="card-text">{{ product.description }}</p>
-                <p>Price: ${{ product.price }}</p>
-                <p>Available: {{ product.quantity }}</p>
-                <a href="{% url 'place_order' product.id %}" class="btn btn-primary">Order Now</a>
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Products</h1>
+
+    <!-- Cart Summary Section -->
+    <div class="cart-summary">
+        <a href="{% url 'view_cart' %}" class="btn btn-info">
+            Cart: {{ cart.items.count }} item(s) - ${{ cart.total_price }}
+        </a>
+    </div>
+
+    <div class="row">
+        {% for product in products %}
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ product.name }}</h5>
+                    <p class="card-text">{{ product.description }}</p>
+                    <p class="card-text"><strong>${{ product.price }}</strong></p>
+                    
+                    <form action="{% url 'add_to_cart' product.id %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary">Add to Cart</button>
+                    </form>
+                </div>
             </div>
         </div>
+        {% endfor %}
     </div>
-    {% endfor %}
 </div>
 {% endblock %}
