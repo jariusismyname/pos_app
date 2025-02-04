@@ -181,15 +181,13 @@ def adjust_cart_item(request, cart_item_id):
 
     return redirect("view_cart")  # Stay on the cart page after update or removal
 
-
-
-# Place Order (after checking cart)
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Cart, Order, CartItem
 from django.contrib import messages
 from django.utils.timezone import now
-@login_required
+from django.contrib.auth.decorators import login_required
 
+@login_required
 def place_order(request):
     cart = get_object_or_404(Cart, user=request.user)
 
@@ -198,9 +196,15 @@ def place_order(request):
 
         if not shipping_address:
             messages.error(request, "Shipping address is required.")
-            return redirect('view_cart')  # If no shipping address provided
+            return redirect('view_cart')  # Redirect to cart if no address provided
 
-        # Create a list to store order details
+        # ** Check stock availability before placing the order **
+        for item in cart.items.all():
+            if item.quantity > item.product.quantity:
+                messages.error(request, f"Not enough stock for {item.product.name}. Available: {item.product.quantity}")
+                return redirect('view_cart')  # Redirect back to cart if stock is not enough
+
+        # ** If stock is available, proceed with order placement **
         order_items = []
         total_price = 0
 
@@ -216,14 +220,14 @@ def place_order(request):
             order_items.append(order)
             total_price += order.total_price
 
-            # Update product quantity in stock
+            # ** Reduce stock quantity **
             item.product.quantity -= item.quantity
             item.product.save()
 
-        # Clear cart after placing order
+        # ** Clear cart after placing order **
         cart.items.all().delete()
 
-        # Redirect to the receipt page with order details
+        # ** Show receipt after order placement **
         return render(request, 'receipt.html', {
             'order_items': order_items,
             'total_price': total_price,
@@ -232,8 +236,6 @@ def place_order(request):
         })
 
     return render(request, 'place_order.html', {'cart': cart})
-
-
 
 # Logout View
 def logout_view(request):
