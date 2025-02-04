@@ -91,17 +91,16 @@ def signup_view(request):
         form = SignUpForm()
     return render(request, 'signup.html', {'form': form})
 
+from django.shortcuts import render, get_object_or_404
+from .models import Product, Cart
 
-# Products View (with cart data)
 def products_view(request):
     products = Product.objects.filter(quantity__gt=0)
 
-    # Get or create the cart for the logged-in user
+    # Get or create the user's cart
     cart, created = Cart.objects.get_or_create(user=request.user)
 
-    # Render the products page with the cart information
     return render(request, 'products.html', {'products': products, 'cart': cart})
-
 
 from django.shortcuts import render, get_object_or_404
 from .models import Cart
@@ -115,39 +114,52 @@ def view_cart(request):
 
     # Render the cart page with the cart items
     return render(request, 'cart.html', {'cart': cart, 'cart_items': cart_items})
-from django.shortcuts import get_object_or_404, redirect
-from .models import Cart, CartItem, Product
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Product, Cart, CartItem
 from django.contrib import messages
 
-# Add product to cart
 def add_to_cart(request, product_id):
     product = get_object_or_404(Product, id=product_id)
-
-    # Get or create the cart for the logged-in user
     cart, created = Cart.objects.get_or_create(user=request.user)
 
-    # Check if the product is already in the cart
     cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
 
-    if not created:
-        cart_item.quantity += 1  # Increase the quantity if product already in cart
+    if created:
+        cart_item.quantity = 1  # Default quantity when first added
+    else:
+        cart_item.quantity += 1  # Increase quantity if already in cart
+
     cart_item.save()
-
     messages.success(request, f"{product.name} added to your cart.")
-    return redirect('products')  # Redirect back to the products page
 
+    return redirect("products")
 
-# Adjust Cart Item Quantity
+def adjust_cart_item(request, cart_item_id):
+    cart_item = get_object_or_404(CartItem, id=cart_item_id)
+
+    if request.method == "POST":
+        try:
+            quantity = int(request.POST.get("quantity"))
+
+            if quantity > 0:
+                cart_item.quantity = quantity
+                cart_item.save()
+            else:
+                cart_item.delete()
+
+        except ValueError:
+            messages.error(request, "Invalid quantity.")
+
+    return redirect("view_cart")
+
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import CartItem
 from django.contrib import messages
 
 def adjust_cart_item(request, cart_item_id):
-    # Get the cart item by ID
     cart_item = get_object_or_404(CartItem, id=cart_item_id)
 
     if request.method == "POST":
-        # Get quantity from POST data
         try:
             quantity = int(request.POST.get("quantity"))
 
@@ -158,10 +170,13 @@ def adjust_cart_item(request, cart_item_id):
             else:
                 cart_item.delete()  # Remove item if quantity is 0
                 messages.warning(request, f"Removed {cart_item.product.name} from cart.")
+
         except ValueError:
             messages.error(request, "Invalid quantity input.")
 
-    return redirect("view_cart")
+    # Redirect to the products page (instead of main cart page)
+    return redirect("products")
+
 
 # Place Order (after checking cart)
 from django.shortcuts import render, redirect, get_object_or_404

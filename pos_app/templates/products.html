@@ -2,33 +2,64 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h1 class="text-center mb-4">Products</h1>
-
-    <!-- Cart Summary Section -->
-    <div class="cart-summary">
-        <a href="{% url 'view_cart' %}" class="btn btn-info">
-            Cart: {{ cart.items.count }} item(s) - ${{ cart.total_price }}
-        </a>
-    </div>
-
     <div class="row">
-        {% for product in products %}
-        <div class="col-md-4">
-            <div class="card mb-4">
-                <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
-                <div class="card-body">
-                    <h5 class="card-title">{{ product.name }}</h5>
-                    <p class="card-text">{{ product.description }}</p>
-                    <p class="card-text"><strong>${{ product.price }}</strong></p>
-                    
-                    <form action="{% url 'add_to_cart' product.id %}" method="POST">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-primary">Add to Cart</button>
-                    </form>
+        <!-- Left Side: Product List -->
+        <div class="col-md-8">
+            <h1 class="mb-4">Products</h1>
+            <div class="row">
+                {% for product in products %}
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            <p class="card-text">{{ product.description }}</p>
+                            <p class="card-text"><strong>${{ product.price }}</strong></p>
+
+                            <!-- Add to Cart Button (No Quantity Selection) -->
+                            <form action="{% url 'add_to_cart' product.id %}" method="POST">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-primary w-100">Add to Cart</button>
+                            </form>
+
+                        </div>
+                    </div>
                 </div>
+                {% endfor %}
             </div>
         </div>
-        {% endfor %}
+
+        <!-- Right Side: Cart Sidebar -->
+        <div class="col-md-4">
+            <div class="card p-3 shadow">
+                <h3 class="text-center">🛒 Your Cart</h3>
+                <hr>
+
+                {% if cart.items.all %}
+                <ul class="list-group">
+                    {% for item in cart.items.all %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ item.product.name }}</strong><br>
+                            <small>Qty: {{ item.quantity }} | ${{ item.total_price }}</small>
+                        </div>
+                        <form action="{% url 'adjust_cart_item' item.id %}" method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="quantity" value="0">
+                            <button type="submit" class="btn btn-danger btn-sm">❌</button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                <h4 class="mt-3 text-center">Total: ${{ cart.total_price }}</h4>
+                <a href="{% url 'view_cart' %}" class="btn btn-success w-100 mt-2">Go to Cart</a>
+
+                {% else %}
+                <p class="text-center text-muted">Your cart is empty.</p>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
