@@ -4,6 +4,9 @@
 <div class="container mt-5">
     <h1 class="text-center mb-4">Your Cart</h1>
 
+    <!-- Back Button -->
+    <a href="{% url 'products' %}" class="btn btn-secondary mb-3">Back to Products</a>
+
     {% if cart.items.all %}
     <table class="table table-bordered">
         <thead class="table-dark">
@@ -21,16 +24,20 @@
                 <td>{{ item.product.name }}</td>
                 <td>${{ item.product.price }}</td>
                 <td>
-                    <input type="number" id="quantity-{{ item.id }}" value="{{ item.quantity }}" min="1"
-                        class="form-control form-control-sm update-quantity" data-item-id="{{ item.id }}">
+                    <form action="{% url 'adjust_cart_item' item.id %}" method="POST">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="form-control form-control-sm">
+                            <button type="submit" class="btn btn-warning btn-sm">Update</button>
+                        </div>
+                    </form>
                 </td>
                 <td>${{ item.total_price }}</td>
                 <td>
-                    <!-- Remove Button -->
-                    <form action="{% url 'adjust_cart_item' item.id %}" method="POST" class="remove-item-form">
+                    <form action="{% url 'adjust_cart_item' item.id %}" method="POST">
                         {% csrf_token %}
                         <input type="hidden" name="quantity" value="0">
-                        <button type="submit" class="btn btn-danger btn-sm mt-1">❌</button>
+                        <button type="submit" class="btn btn-danger btn-sm">❌</button>
                     </form>
                 </td>
             </tr>
@@ -38,37 +45,10 @@
         </tbody>
     </table>
 
-    <p class="mt-3"><strong>Total Price: $<span id="total-price">{{ cart.total_price }}</span></strong></p>
+    <p class="mt-3"><strong>Total Price: ${{ cart.total_price }}</strong></p>
     <a href="{% url 'place_order' %}" class="btn btn-success w-100 mt-3">Proceed to Checkout</a>
     {% else %}
     <p class="text-center text-muted">Your cart is empty!</p>
     {% endif %}
 </div>
-
-<!-- JavaScript for AJAX Quantity Update -->
-<script>
-document.querySelectorAll(".update-quantity").forEach(input => {
-    input.addEventListener("change", function () {
-        const itemId = this.dataset.itemId;
-        const quantity = this.value;
-
-        fetch(`/adjust-cart-item/${itemId}/`, {
-            method: "POST",
-            headers: {
-                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: `quantity=${quantity}`
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById("total-price").innerText = data.total_price;
-            } else {
-                alert("Failed to update quantity!");
-            }
-        });
-    });
-});
-</script>
 {% endblock %}

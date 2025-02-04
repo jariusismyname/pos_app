@@ -157,11 +157,11 @@ def adjust_cart_item(request, cart_item_id):
             messages.error(request, "Invalid quantity.")
 
     return redirect("view_cart")
-
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import CartItem
+from .models import Product, Cart, CartItem
 from django.contrib import messages
 
+# Add or Update Cart Item
 def adjust_cart_item(request, cart_item_id):
     cart_item = get_object_or_404(CartItem, id=cart_item_id)
 
@@ -171,17 +171,16 @@ def adjust_cart_item(request, cart_item_id):
 
             if quantity > 0:
                 cart_item.quantity = quantity
-                cart_item.save()
-                messages.success(request, f"Updated {cart_item.product.name} quantity to {quantity}.")
+                cart_item.save()  # Update cart item
+                # 🔥 Don't send a message, as it might cause spam (remove messages here)
             else:
-                cart_item.delete()  # Remove item if quantity is 0
-                messages.warning(request, f"Removed {cart_item.product.name} from cart.")
+                cart_item.delete()  # Remove cart item if quantity is 0
 
         except ValueError:
-            messages.error(request, "Invalid quantity input.")
+            messages.error(request, "Invalid quantity.")
 
-    # Redirect to the products page (instead of main cart page)
-    return redirect("products")
+    return redirect("view_cart")  # Stay on the cart page after update or removal
+
 
 
 # Place Order (after checking cart)
