@@ -74,9 +74,6 @@ def login_view(request):
         form = LoginForm()
 
     return render(request, 'login.html', {'form': form})
-
-
-# Sign Up View
 def signup_view(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST)
@@ -87,9 +84,14 @@ def signup_view(request):
             user.save()
             login(request, user)
             return redirect('products')
+        else:
+            # Print form errors for debugging
+            print("Form errors:", form.errors)
+            return render(request, 'signup.html', {'form': form})
     else:
         form = SignUpForm()
     return render(request, 'signup.html', {'form': form})
+
 
 from django.shortcuts import render, get_object_or_404
 from .models import Product, Cart
