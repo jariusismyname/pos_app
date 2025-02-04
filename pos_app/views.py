@@ -121,16 +121,18 @@ from django.contrib import messages
 def add_to_cart(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     cart, created = Cart.objects.get_or_create(user=request.user)
-
+    
     cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
 
     if created:
-        cart_item.quantity = 1  # Default quantity when first added
+        cart_item.quantity = 1  # Default quantity for new item
     else:
         cart_item.quantity += 1  # Increase quantity if already in cart
-
+    
     cart_item.save()
-    messages.success(request, f"{product.name} added to your cart.")
+
+    # 🔥 Remove message spam (Optional: Comment this out to remove all messages)
+    # messages.success(request, f"{product.name} added to your cart.")
 
     return redirect("products")
 
@@ -144,8 +146,12 @@ def adjust_cart_item(request, cart_item_id):
             if quantity > 0:
                 cart_item.quantity = quantity
                 cart_item.save()
+                # 🔥 Remove message spam (Optional)
+                # messages.success(request, f"Updated {cart_item.product.name} quantity to {quantity}.")
             else:
                 cart_item.delete()
+                # 🔥 Remove message spam (Optional)
+                # messages.success(request, f"Removed {cart_item.product.name} from cart.")
 
         except ValueError:
             messages.error(request, "Invalid quantity.")

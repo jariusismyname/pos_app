@@ -1,27 +1,26 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container d-flex justify-content-center align-items-center" style="height: 100vh;">
-    <div class="card p-4 shadow-lg" style="width: 350px;">
-        <h2 class="text-center mb-3">Admin Login</h2>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h2 class="text-center mb-4">Admin Login</h2>
 
-        <!-- Show messages ONLY if they exist -->
-        {% if messages %}
-            <div class="alert alert-danger">
-                {% for message in messages %}
-                    <p class="mb-0">{{ message }}</p>
-                {% endfor %}
-            </div>
-        {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password:</label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mb-2">Login</button>
+            </form>
 
-        <form method="POST">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label for="password" class="form-label">Password:</label>
-                <input type="password" id="password" name="password" class="form-control" required>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Login</button>
-        </form>
+            <!-- I Am a Customer Button -->
+            <form method="post" action="{% url 'products' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary w-100">I am a Customer</button>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}
