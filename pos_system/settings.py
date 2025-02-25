@@ -11,6 +11,10 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,13 +24,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(u*4zsoefv4rpqwz1_-t7jj23n9vx0iv(8f6a9&d@x!0ej(*i)'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'your-default-secret-key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
-import os
+ALLOWED_HOSTS = ['.vercel.app', '127.0.0.1', 'localhost']
 
 # Application definition
 
@@ -76,18 +79,14 @@ WSGI_APPLICATION = 'pos_system.wsgi.application'
 
 DATABASES = {
     'default': {
-         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'pos_db',
-        'USER': 'root',
-        'PASSWORD': 'connectedisme1234',
-        'HOST': 'localhost',
-        'PORT': '8000',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('DB_NAME', 'pos_db'),
+        'USER': os.getenv('DB_USER', 'root'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'connectedisme1234'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '3306'),
     }
 }
-
-import os
-
-ALLOWED_HOSTS = ['.vercel.app', '127.0.0.1', 'localhost']
 
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
@@ -140,3 +139,17 @@ LOGOUT_REDIRECT_URL = 'login'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Vercel configuration
+VERCEL_CONFIG = {
+    "version": 2,
+    "builds": [
+        {
+            "src": "pos_system/wsgi.py",
+            "use": "@vercel/python"
+        }
+    ],
+    "routes": [
+        { "src": "/(.*)", "dest": "pos_system/wsgi.py" }
+    ]
+}
