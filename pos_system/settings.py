@@ -9,6 +9,8 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
+import pymysql
+pymysql.install_as_MySQLdb()
 
 from pathlib import Path
 import os
@@ -80,13 +82,14 @@ WSGI_APPLICATION = 'pos_system.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME', 'pos_db'),
-        'USER': os.getenv('DB_USER', 'root'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'connectedisme1234'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '3306'),
+        'NAME': 'jarius_pos_db',  # Replace with your database name
+        'USER': 'jarius',            # Replace with your database username
+        'PASSWORD': 'connectedisme1234',     # Use your actual database password
+        'HOST': 'mysql-jarius.alwaysdata.net',  # Find your DB hostname in InfinityFree
+        'PORT': '3306',
     }
 }
+
 
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
