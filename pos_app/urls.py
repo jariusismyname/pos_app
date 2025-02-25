@@ -1,7 +1,14 @@
 from django.urls import path
 from . import views
+from django.urls import path, include
+from django.shortcuts import redirect
+
+def redirect_to_login(request):
+    return redirect('/login/')  # Redirect root URL to /login/
 
 urlpatterns = [
+        path('', redirect_to_login),  # 👈 Redirect root URL `/` to `/login/`
+
     path('add-to-cart/<int:product_id>/', views.add_to_cart, name='add_to_cart'),
     path('cart/', views.view_cart, name='view_cart'),
     path('adjust-cart-item/<int:cart_item_id>/', views.adjust_cart_item, name='adjust_cart_item'),
